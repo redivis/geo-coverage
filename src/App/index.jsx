@@ -17,6 +17,11 @@ import getCollection from 'helpers/getCollection';
 import getBigQueryMap from '../Map/BigQuery/getMap';
 
 import * as styles from './styles.css';
+import {
+	authorize,
+	/* deauthorize,
+	isAuthorized, */
+} from 'redivis';
 
 const INPUT_TIMEOUT_MS = 1000;
 const MAP_TIMEOUT_MS = 1000;
@@ -108,6 +113,37 @@ function App({ history }) {
 			localStorage.removeItem('path');
 			history.replace(`/${path}`);
 		}
+	}, []);
+
+	const [apiToken, setApiToken] = useState(null);
+
+	const handleSetApiToken = useCallback(
+		async () => {
+			// const currentApiToken = await isAuthorized();
+			const currentApiToken = sessionStorage.getItem('redivis_oauth_token');
+			console.log('sessionStorage apiToken', currentApiToken, JSON.parse(currentApiToken));
+			setApiToken(JSON.parse(currentApiToken));
+		},
+		[
+			/* isAuthorized */
+		],
+	);
+
+	useEffect(() => {
+		handleSetApiToken();
+	}, []);
+
+	const handleAuthenticate = useCallback(async () => {
+		console.log('clicked authenticate');
+		await authorize({});
+		console.log('authorize returned');
+		handleSetApiToken();
+	}, [authorize]);
+
+	const handleUnauthenticate = useCallback(async () => {
+		// await deauthorize()
+		sessionStorage.removeItem('redivis_oauth_token');
+		handleSetApiToken();
 	}, []);
 
 	const accessToken = getCredentials();
@@ -277,7 +313,12 @@ function App({ history }) {
 						</div>
 						<div className={styles.buttonWrapper}>
 							{!accessToken && (
-								<Button size={'small'} variant={'contained'} color={'primary'} onClick={handleSignIn}>
+								<Button
+									size={'small'}
+									variant={'contained'}
+									color={'primary'}
+									onClick={handleAuthenticate}
+								>
 									{'Sign in to Redivis'}
 								</Button>
 							)}

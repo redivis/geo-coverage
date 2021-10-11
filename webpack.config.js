@@ -12,6 +12,7 @@ module.exports = function ({ env } = {}) {
 			path: `${__dirname}/dist`,
 			filename: '[name].js',
 		},
+		target: 'web',
 		mode: env === 'development' ? 'development' : 'production',
 		plugins: [
 			new webpack.DefinePlugin({
@@ -42,11 +43,7 @@ module.exports = function ({ env } = {}) {
 										},
 									],
 								],
-								plugins: [
-									require.resolve('@babel/plugin-proposal-class-properties'),
-									require.resolve('@babel/plugin-proposal-export-namespace-from'),
-									require.resolve('@babel/plugin-proposal-export-default-from'),
-								],
+								plugins: [require.resolve('@babel/plugin-proposal-export-default-from')],
 							},
 						},
 					],
