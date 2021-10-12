@@ -134,8 +134,7 @@ function App({ history }) {
 	}, []);
 
 	const handleAuthenticate = useCallback(async () => {
-		console.log('clicked authenticate');
-		await authorize({});
+		await authorize();
 		console.log('authorize returned');
 		handleSetApiToken();
 	}, [authorize]);
