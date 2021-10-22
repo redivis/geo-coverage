@@ -3,6 +3,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import useTimeout from 'helpers/useTimeout';
 import { withRouter } from 'react-router-dom';
 
+import Header from '../Header';
 import Map from '../Map';
 import Settings from '../Settings';
 import Typography from '@material-ui/core/Typography';
@@ -11,12 +12,12 @@ import Button from '@material-ui/core/Button';
 import { makeStyles, createMuiTheme, ThemeProvider } from '@material-ui/core/styles';
 import { grey } from '@material-ui/core/colors';
 
-import { getCredentials, login, logout } from 'helpers/auth';
 import getTables from 'helpers/getTables';
 import getCollection from 'helpers/getCollection';
 import getBigQueryMap from '../Map/BigQuery/getMap';
 
 import * as styles from './styles.css';
+import { authorize, deauthorize, isAuthorized } from 'redivis';
 
 const INPUT_TIMEOUT_MS = 1000;
 const MAP_TIMEOUT_MS = 1000;
@@ -88,6 +89,9 @@ const theme = createMuiTheme({
 			contrastText: '#ffffff',
 		},
 	},
+	shape: {
+		borderRadius: 2,
+	},
 });
 
 const useTitleStyles = makeStyles({
@@ -110,20 +114,25 @@ function App({ history }) {
 		}
 	}, []);
 
-	const accessToken = getCredentials();
+	const [isUserAuthorized, setIsUserAuthorized] = useState(false);
 
-	const handleSignIn = useCallback(async () => {
-		try {
-			await login();
-			window.location.assign(window.location.href);
-		} catch (e) {
-			console.error(e);
-		}
+	const handleSetIsUserAuthorized = useCallback(async () => {
+		const nextIsUserAuthorized = await isAuthorized();
+		setIsUserAuthorized(nextIsUserAuthorized);
 	}, []);
 
-	const handleSignOut = useCallback(async () => {
-		logout();
-		window.location.assign(window.location.href);
+	useEffect(() => {
+		handleSetIsUserAuthorized();
+	}, []);
+
+	const handleAuthorize = useCallback(async () => {
+		await authorize();
+		handleSetIsUserAuthorized();
+	}, []);
+
+	const handleDeauthorize = useCallback(async () => {
+		await deauthorize();
+		handleSetIsUserAuthorized();
 	}, []);
 
 	const [owner, setOwner] = useState(DEFAULT_OWNER);
@@ -275,18 +284,6 @@ function App({ history }) {
 								{'Documentation'}
 							</Button>
 						</div>
-						<div className={styles.buttonWrapper}>
-							{!accessToken && (
-								<Button size={'small'} variant={'contained'} color={'primary'} onClick={handleSignIn}>
-									{'Sign in to Redivis'}
-								</Button>
-							)}
-							{!!accessToken && (
-								<Button size={'small'} onClick={handleSignOut}>
-									{'Sign out'}
-								</Button>
-							)}
-						</div>
 					</div>
 				</div>
 			</div>
@@ -295,89 +292,94 @@ function App({ history }) {
 
 	const renderBody = () => {
 		return (
-			<ThemeProvider theme={theme}>
-				<div className={styles.bodyWrapper}>
-					<div className={styles.mapWrapper}>
-						<div className={styles.settings}>
-							<Settings
-								owner={owner}
-								setOwner={setOwner}
-								parentEntity={parentEntity}
-								setParentEntity={setParentEntity}
-								table={table}
-								setTable={setTable}
-								region={region}
-								setRegion={setRegion}
-								subregion={subregion}
-								setSubregion={setSubregion}
-								latitudeIndicator={latitudeIndicator}
-								setLatitudeIndicator={setLatitudeIndicator}
-								longitudeIndicator={longitudeIndicator}
-								setLongitudeIndicator={setLongitudeIndicator}
-								roads={roads}
-								setRoads={setRoads}
-								coverageTravelTime={coverageTravelTime}
-								setCoverageTravelTime={setCoverageTravelTime}
-								colorScaleBucketCount={colorScaleBucketCount}
-								setColorScaleBucketCount={setColorScaleBucketCount}
-								resolution={resolution}
-								setResolution={setResolution}
-								hideRoads={hideRoads}
-								useOsmRoadSpeed={useOsmRoadSpeed}
-								showPoints={showPoints}
-								setHideRoads={setHideRoads}
-								setUseOsmRoadSpeed={setUseOsmRoadSpeed}
-								setShowPoints={setShowPoints}
-								showPopulationDensity={showPopulationDensity}
-								setShowPopulationDensity={setShowPopulationDensity}
-								hasDiscreteColorScale={hasDiscreteColorScale}
-								setHasDiscreteColorScale={setHasDiscreteColorScale}
-								pointRadius={pointRadius}
-								setPointRadius={setPointRadius}
-								colorScale={colorScale}
-								setColorScale={setColorScale}
-								tables={tables}
-								isFetchingTables={isFetchingTables}
-								tablesError={tablesError}
-								collection={collection}
-								isFetchingCollection={isFetchingCollection}
-								collectionError={collectionError}
-								isFetchingMap={isFetchingMap}
-								mapDataError={mapDataError}
-							/>
-						</div>
-						<div className={styles.map}>
-							<Map
-								collection={collection}
-								mapData={mapData}
-								region={region}
-								subregion={subregion}
-								latitudeIndicator={latitudeIndicator}
-								longitudeIndicator={longitudeIndicator}
-								roads={roads}
-								coverageTravelTime={coverageTravelTime}
-								colorScaleBucketCount={colorScaleBucketCount}
-								resolution={resolution}
-								hideRoads={hideRoads}
-								useOsmRoadSpeed={useOsmRoadSpeed}
-								showPoints={showPoints}
-								showPopulationDensity={showPopulationDensity}
-								hasDiscreteColorScale={hasDiscreteColorScale}
-								pointRadius={pointRadius}
-								colorScale={colorScale}
-							/>
-						</div>
+			<div className={styles.bodyWrapper}>
+				<div className={styles.mapWrapper}>
+					<div className={styles.settings}>
+						<Settings
+							owner={owner}
+							setOwner={setOwner}
+							parentEntity={parentEntity}
+							setParentEntity={setParentEntity}
+							table={table}
+							setTable={setTable}
+							region={region}
+							setRegion={setRegion}
+							subregion={subregion}
+							setSubregion={setSubregion}
+							latitudeIndicator={latitudeIndicator}
+							setLatitudeIndicator={setLatitudeIndicator}
+							longitudeIndicator={longitudeIndicator}
+							setLongitudeIndicator={setLongitudeIndicator}
+							roads={roads}
+							setRoads={setRoads}
+							coverageTravelTime={coverageTravelTime}
+							setCoverageTravelTime={setCoverageTravelTime}
+							colorScaleBucketCount={colorScaleBucketCount}
+							setColorScaleBucketCount={setColorScaleBucketCount}
+							resolution={resolution}
+							setResolution={setResolution}
+							hideRoads={hideRoads}
+							useOsmRoadSpeed={useOsmRoadSpeed}
+							showPoints={showPoints}
+							setHideRoads={setHideRoads}
+							setUseOsmRoadSpeed={setUseOsmRoadSpeed}
+							setShowPoints={setShowPoints}
+							showPopulationDensity={showPopulationDensity}
+							setShowPopulationDensity={setShowPopulationDensity}
+							hasDiscreteColorScale={hasDiscreteColorScale}
+							setHasDiscreteColorScale={setHasDiscreteColorScale}
+							pointRadius={pointRadius}
+							setPointRadius={setPointRadius}
+							colorScale={colorScale}
+							setColorScale={setColorScale}
+							tables={tables}
+							isFetchingTables={isFetchingTables}
+							tablesError={tablesError}
+							collection={collection}
+							isFetchingCollection={isFetchingCollection}
+							collectionError={collectionError}
+							isFetchingMap={isFetchingMap}
+							mapDataError={mapDataError}
+						/>
+					</div>
+					<div className={styles.map}>
+						<Map
+							collection={collection}
+							mapData={mapData}
+							region={region}
+							subregion={subregion}
+							latitudeIndicator={latitudeIndicator}
+							longitudeIndicator={longitudeIndicator}
+							roads={roads}
+							coverageTravelTime={coverageTravelTime}
+							colorScaleBucketCount={colorScaleBucketCount}
+							resolution={resolution}
+							hideRoads={hideRoads}
+							useOsmRoadSpeed={useOsmRoadSpeed}
+							showPoints={showPoints}
+							showPopulationDensity={showPopulationDensity}
+							hasDiscreteColorScale={hasDiscreteColorScale}
+							pointRadius={pointRadius}
+							colorScale={colorScale}
+						/>
 					</div>
 				</div>
-			</ThemeProvider>
+			</div>
 		);
 	};
 
 	return (
-		<div className={styles.appWrapper}>
-			{renderHeader()}
-			{renderBody()}
-		</div>
+		<ThemeProvider theme={theme}>
+			<div className={styles.appWrapper}>
+				<Header
+					title={'Geospatial coverage analyzer'}
+					isUserAuthorized={isUserAuthorized}
+					onAuthorize={handleAuthorize}
+					onDeauthorize={handleDeauthorize}
+				/>
+				{renderBody()}
+			</div>
+		</ThemeProvider>
 	);
 }
 export default withRouter(App);
