@@ -32,7 +32,9 @@
 
 .bodyWrapper{
     position: relative;
-    height: calc(100% - 58px);
+    display: flex;
+    flex-direction: column;
+    height: calc(100% - 50px);
 }
 
 .mapWrapper {
