@@ -1,11 +1,11 @@
 export default function () {
-	let authResponse = localStorage.getItem('authorization');
+	let authResponse = sessionStorage.getItem('redivis_oauth_token');
 	if (!authResponse) {
 		return null;
 	}
 	authResponse = JSON.parse(authResponse);
 	if (authResponse.expires_at < Date.now() / 1000 + 300) {
-		localStorage.removeItem('authorization');
+		sessionStorage.removeItem('redivis_oauth_token');
 		return null;
 	}
 	return authResponse.access_token;
