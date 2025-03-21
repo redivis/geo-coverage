@@ -48,7 +48,7 @@
     "react": "17.0.1",
     "react-dom": "17.0.1",
     "react-router-dom": "5.2.0",
-    "redivis": "0.2.10",
+    "redivis": "0.3.3",
     "stylelint": "13.9.0",
     "stylelint-config-prettier": "8.0.2",
     "stylelint-config-recommended": "3.0.0",
