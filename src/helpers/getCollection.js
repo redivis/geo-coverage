@@ -52,6 +52,7 @@ export default async function (tableReference) {
 		);
 	}
 	const variables = variablesResponse.results;
+
 	let rowsResponse = await retryableFetch(
 		`https://redivis.com/api/v1/tables/${tableReference}/rows?maxResults=10000&selectedVariables=${variables
 			.sort((a, b) => a.index - b.index)
@@ -70,7 +71,10 @@ export default async function (tableReference) {
 		);
 	}
 	rowsResponse = await rowsResponse.text();
-	const rows = rowsResponse.split('\n').map((row) => JSON.parse(row));
+	const rows = rowsResponse.split('\n').map((row) => JSON.parse(row)).map((row) => {
+		return variables.map(({ name }) => row[name]);
+	});
+
 	await cache.set(`${tableReference}_${tableResponse.hash}`, { variables, rows });
 	return new Collection(variables, rows);
 }
