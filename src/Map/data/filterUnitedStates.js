@@ -45,7 +45,7 @@ export default function (boundary, regions, roads) {
 	});
 
 	for (const feature of roads.features) {
-		feature.geometry.geometries.filter((geometry) => {
+		feature.geometry.geometries = feature.geometry.geometries.filter((geometry) => {
 			const bbox = getBBox(geometry);
 			return bbox[0] > minLong && bbox[1] > minLat && bbox[2] < maxLong && bbox[3] < maxLat;
 		});

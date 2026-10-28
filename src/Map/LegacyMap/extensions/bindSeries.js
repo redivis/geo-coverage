@@ -169,8 +169,9 @@ export default function (collection, geoData) {
 	coordinates.forEach((point) => {
 		let feature = featureIdMap[point.id];
 		if (!feature) feature = featureIdMap[synonymsMap[point.id]];
-		if (!feature && point.features.length === 0) {
-			const match = fuzzySet.get(point.id);
+		// Row values are typed (e.g., numeric ids), but FuzzySet only accepts strings
+		if (!feature && point.features.length === 0 && point.id !== null && point.id !== undefined) {
+			const match = fuzzySet.get(String(point.id));
 			if (match && match.length) {
 				feature = featureIdMap[match[0][1]];
 			}
@@ -202,7 +203,7 @@ export default function (collection, geoData) {
 		} else if (point.features.length > 1) {
 			if (idIndicators) {
 				const possibleFeatures = [];
-				const name = point.serie.value.split('_')[0];
+				const name = String(point.serie.value).split('_')[0];
 				for (let i = 0, length = point.features.length; i < length; i++) {
 					if (
 						point.features[i].properties.name.indexOf(name) > -1 ||

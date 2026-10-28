@@ -1,7 +1,6 @@
 import { select as d3Select, geoPath as d3GeoPath } from 'd3';
-import $ from 'jquery';
 
-import * as styles from '../../styles.css';
+import styles from '../../styles.css';
 import costDistance from './costDistance';
 import getProjection from '../../helpers/getProjection';
 
@@ -22,6 +21,7 @@ const canvasMap = new WeakMap();
 const popCanvasMap = new WeakMap();
 const projectionMap = new WeakMap();
 const maxDistanceMap = new WeakMap();
+const coverageLabelResizeHandlers = new WeakMap();
 
 export function show(maxDistance, resolution, showPopDensity) {
 	resolution = parseInt(resolution, 10);
@@ -263,7 +263,8 @@ export function show(maxDistance, resolution, showPopDensity) {
 		const scale = Math.min(map.svg.attr('width') / 1200, map.svg.attr('height') / 800);
 		textBox.attr('transform', `scale(${scale})`);
 
-		$(window).on('resize.coverageLabelText', () => {
+		window.removeEventListener('resize', coverageLabelResizeHandlers.get(map));
+		const onResize = () => {
 			const scale = Math.min(map.svg.attr('width') / 1200, Math.min(map.svg.attr('height') / 800));
 			textBox.attr(
 				'transform',
@@ -273,9 +274,10 @@ export function show(maxDistance, resolution, showPopDensity) {
 					10
 				})scale(${scale})`,
 			);
-		});
-
-		$(window).trigger('resize.coverageLabelText');
+		};
+		coverageLabelResizeHandlers.set(map, onResize);
+		window.addEventListener('resize', onResize);
+		onResize();
 	}
 }
 
@@ -293,7 +295,8 @@ export function hide() {
 	this.svg.select(`.${styles.coverageLabel}`).remove();
 	g.node().insertBefore(this.boundary.elem, g.node().firstChild);
 	defs.selectAll(`.${styles.coverageImage}`).remove();
-	$(window).unbind('resize.coverageLabelText');
+	window.removeEventListener('resize', coverageLabelResizeHandlers.get(this));
+	coverageLabelResizeHandlers.delete(this);
 }
 
 export function getFeatureCoverage(feature) {

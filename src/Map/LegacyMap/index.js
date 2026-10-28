@@ -1,7 +1,6 @@
-import * as topojson from 'topojson-client';
 import { select as d3Select, geoPath as d3GeoPath } from 'd3';
-import * as colorbrewer from 'colorbrewer';
-import * as styles from './styles.css';
+import colorbrewer from 'colorbrewer';
+import styles from './styles.css';
 import colorScale from './helpers/colorScale';
 import drawFeatures from './helpers/drawFeatures';
 import zoom from './helpers/zoom';
@@ -125,18 +124,18 @@ export default class Map {
 			if (layer.type !== 'FeatureCollection') return;
 			layer.features.forEach((feature, i) => {
 				if (feature.geometry.type === 'Polygon') {
-					cleanPolygon(feature.geometry.coordinates, true);
+					cleanPolygon(feature.geometry.coordinates);
 				} else if (feature.geometry.type === 'MultiPolygon') {
 					feature.geometry.coordinates.forEach((rings) => {
-						cleanPolygon(rings, true);
+						cleanPolygon(rings);
 					});
 				} else if (feature.geometry.type === 'GeometryCollection') {
 					feature.geometry.geometries.forEach((geometry) => {
 						if (geometry.type === 'Polygon') {
-							cleanPolygon(geometry.coordinates, true);
+							cleanPolygon(geometry.coordinates);
 						} else if (geometry.type === 'MultiPolygon') {
 							geometry.coordinates.forEach((rings) => {
-								cleanPolygon(rings, true);
+								cleanPolygon(rings);
 							});
 						}
 					});

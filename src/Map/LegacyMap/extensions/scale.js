@@ -1,5 +1,5 @@
-import { scaleLinear, axisTop, event as d3Event, zoomIdentity } from 'd3';
-import * as styles from '../styles.css';
+import { scaleLinear, axisTop, zoomIdentity } from 'd3';
+import styles from '../styles.css';
 
 export default function (map) {
 	const svg = map.svg;
@@ -25,8 +25,8 @@ export default function (map) {
 
 	scale.attr('transform', `translate(30,${axisDims.height + 30})`);
 
-	map.onZoom(() => {
-		const transform = zoomIdentity.scale(d3Event.transform.k);
+	map.onZoom((zoom, event) => {
+		const transform = zoomIdentity.scale(event.transform.k);
 		scale.call(distanceAxis.scale(transform.rescaleX(distanceScale)));
 	});
 }

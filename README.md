@@ -3,7 +3,7 @@
 > Try it out! https://labs.redivis.com/geo-coverage
 
 ## Overview
-This tool was initially developed by the Redivis team to support the analysis of timely access to surgical care in resource-poor settings. Built on top of the [Redivis API](https://apidocs.redivis.com), it leverages population density information from [WorldPop](https://www.worldpop.org/focus_areas) and road network data from [OpenStreetMap](https://www.openstreetmap.org/about) to estimate the percentage of a population that is with a certain travel time from the nearest facility.
+This tool was initially developed by the Redivis team to support the analysis of timely access to surgical care in resource-poor settings. Built on top of the [Redivis API](https://docs.redivis.com/api) and the [redivis-js](https://github.com/redivis/redivis-js) client library, it leverages population density information from [WorldPop](https://www.worldpop.org/focus_areas) and road network data from [OpenStreetMap](https://www.openstreetmap.org/about) to estimate the percentage of a population that is with a certain travel time from the nearest facility.
 
 Its use cases have expanded to investigate timely access to care [in scores of countries](https://www.wfns.org/menu/62/2016-neurosurgical-capacity-and-access-by-country) across numerous research questions. We're excited to open-source this codebase and make the tool publicly available, and are excited to see the new applications you come up with!
 
@@ -20,10 +20,10 @@ At the least, your table should contain one column (variable) for latitude and o
 You can also skip this step and visualize data in the [demo geo-coverage dataset](https://redivis.com/Demo/datasets/1913).
 
 #### 2. Authenticate your account
-If you're utilizing non-public data, sign in to your Redivis account by clicking the "Sign in to Redivis" button at top right.
+Sign in to your Redivis account by clicking the "Sign in to Redivis" button at top right. Signing in is required to load the map, since road networks and administrative boundaries are queried from OpenStreetMap data on Redivis. It also lets you analyze any non-public tables you have access to.
 
 #### 3. Specify your data 
-Specify your data by providing your username, the name of the dataset you created, and the name of the relevant table. You can reference any table that you have access to, including those owned by other users/organizations or tables created in a project. [Read the full documentation for referencing tables on Redivis.](https://apidocs.redivis.com/referencing-resources)
+Specify your data by providing your username, the name of the dataset you created, and the name of the relevant table. You can reference any table that you have access to, including those owned by other users/organizations or tables created in a workflow. [Read the full documentation for referencing tables on Redivis.](https://docs.redivis.com/api/referencing-resources)
 
 Next, choose the country within which to perform the coverage analysis, optionally specifying a subregion within that country. For example, to perform an analysis of California, you should choose "United States" as the country and specify "California" as the subregion.
 
@@ -37,7 +37,7 @@ Note that highly detailed roads and/or tables with many observations may impact 
 ## Publication
 ### Data sources
 #### OpenStreetMap
-This tool utilizes OpenStreetMap (OSM) data for road networks and administrative boundaries. Specifically, we are leveraging BigQuery's snapshot of OSM, documented and available [here](https://console.cloud.google.com/marketplace/details/openstreetmap/geo-openstreetmap). These data represent a snapshot of the OSM database as of November 2019.
+This tool utilizes OpenStreetMap (OSM) data for road networks and administrative boundaries, from the [OpenStreetMap dataset on Redivis](https://redivis.com/datasets/3s4c-0vyfq9524?v=1.0) (the [admin](https://redivis.com/datasets/3s4c-0vyfq9524/tables/fr0h-bykmzxfq4?v=1.0) and [roads](https://redivis.com/datasets/3s4c-0vyfq9524/tables/y9mg-1jvtxw3np?v=1.0) tables). These were derived from BigQuery's snapshot of OSM, documented and available [here](https://console.cloud.google.com/marketplace/details/openstreetmap/geo-openstreetmap), and represent a snapshot of the OSM database as of November 2019. See [src/Map/data/README.md](src/Map/data/README.md) for how they were derived.
 
 Long roads and administrative boundaries have been simplified up to 250m resolution to improve performance.
 
@@ -82,7 +82,7 @@ If the setting "Use OSM road speeds" is turned on (the default), road speeds wil
 - residential, unclassified: 30 kph
 - off-road: 15 kph
   
-You can manually change these settings by running this tool locally (see "Local development" below) and modifying the `roadSpeeds` variable in `src/Map/LegacyMap/coverageAnalysis/index.js`
+You can manually change these settings by running this tool locally (see "Local development" below) and modifying the `roadSpeeds` variable in `src/Map/LegacyMap/extensions/coverageAnalysis/index.js`
 
 The cost-distance algorithm is computed over a pixel grid for each country, whose largest dimension is equivalent to the setting chosen for "resolution" (default, 1024). The implementation utilizes Javascript (ECMAScript) and canvas shaders available in the web browser to generate the visualization.
 
@@ -101,7 +101,8 @@ Please file an issue in this repository to report a bug or request a new feature
 
 ### Local development
 - clone this repository
-- make sure [Node.js](https://nodejs.org) is installed on your computer
-- navigate to the cloned directory in a terminal, and run `npm start`
-- open http://localhost:8080
+- make sure [Node.js](https://nodejs.org) 22.15 or later is installed on your computer
+- navigate to the cloned directory in a terminal, and run `npm install`, then `npm start`
+- open http://localhost:8080/geo-coverage
+- run `npm run lint` and `npm run format` before committing
 - To deploy, merge changes to the `main` branch. This will automatically trigger a Github action to build assets and push to `gh-pages`

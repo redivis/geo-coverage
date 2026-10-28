@@ -1,23 +1,17 @@
-import PropTypes from 'prop-types';
-import React, { useEffect, useState, useCallback } from 'react';
-import useTimeout from 'helpers/useTimeout';
-import { withRouter } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
+import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { authorize, deauthorize, isAuthorized } from 'redivis';
 
 import Header from '../Header';
 import Map from '../Map';
 import Settings from '../Settings';
-import Typography from '@material-ui/core/Typography';
-import Button from '@material-ui/core/Button';
-
-import { makeStyles, createMuiTheme, ThemeProvider } from '@material-ui/core/styles';
-import { grey } from '@material-ui/core/colors';
 
 import getTables from 'helpers/getTables';
 import getCollection from 'helpers/getCollection';
-import getBigQueryMap from '../Map/BigQuery/getMap';
+import getMapData from '../Map/data/getMapData';
+import useDebouncedResource from 'helpers/useDebouncedResource';
 
-import * as styles from './styles.css';
-import { authorize, deauthorize, isAuthorized } from 'redivis';
+import styles from './styles.css';
 
 const INPUT_TIMEOUT_MS = 1000;
 const MAP_TIMEOUT_MS = 1000;
@@ -31,16 +25,6 @@ const DEFAULT_LATITUDE_INDICATOR = '';
 const DEFAULT_LONGITUDE_INDICATOR = '';
 const DEFAULT_ROADS = ['motorway', 'trunk', 'primary'];
 
-// For testing
-// const DEFAULT_OWNER = 'ianmathews91';
-// const DEFAULT_PARENT_ENTITY = 'geospatial_coverage';
-// const DEFAULT_TABLE = 'zambia';
-// const DEFAULT_REGION = 'Zambia';
-// const DEFAULT_SUBREGION = '';
-// const DEFAULT_LATITUDE_INDICATOR = 'GPS_S';
-// const DEFAULT_LONGITUDE_INDICATOR = 'GPS_E';
-// const DEFAULT_ROADS = ['motorway', 'trunk', 'primary', 'secondary', 'tertiary'];
-
 const DEFAULT_COVERAGE_TRAVEL_TIME = '120';
 const DEFAULT_RESOLUTION = '1024';
 const DEFAULT_SHOW_POINTS = true;
@@ -48,23 +32,22 @@ const DEFAULT_HIDE_ROADS = false;
 const DEFAULT_USE_OSM_ROAD_SPEED = true;
 const DEFAULT_SHOW_POPULATION_DENSITY = false;
 const DEFAULT_HAS_DISCRETE_COLOR_SCALE = false;
-const DEFAULT_COLOR_SCALE_BUCKET_COUNT = 9;
+const DEFAULT_COLOR_SCALE_BUCKET_COUNT = '9';
 const DEFAULT_POINT_RADIUS = '2';
 const DEFAULT_COLOR_SCALE = [];
 
-const latRegex = /lat/gi;
-const longRegex = /lo?ng/gi;
+const latRegex = /lat/i;
+const longRegex = /lo?ng/i;
 const latLongTypes = new Set(['float', 'string']);
 
 function guessLatAndLongIndicators(collection) {
 	let latitude = '';
 	let longitude = '';
-	for (let i = 0; i < collection.variables.length; i++) {
-		const variable = collection.variables[i];
-		if (!latitude && variable.name.match(latRegex) && latLongTypes.has(variable.type)) {
+	for (const variable of collection.variables) {
+		if (!latitude && latRegex.test(variable.name) && latLongTypes.has(variable.type)) {
 			latitude = variable.name;
 		}
-		if (!longitude && variable.name.match(longRegex) && latLongTypes.has(variable.type)) {
+		if (!longitude && longRegex.test(variable.name) && latLongTypes.has(variable.type)) {
 			longitude = variable.name;
 		}
 		if (latitude && longitude) {
@@ -74,7 +57,7 @@ function guessLatAndLongIndicators(collection) {
 	return { latitude, longitude };
 }
 
-const theme = createMuiTheme({
+const theme = createTheme({
 	palette: {
 		primary: {
 			light: '#a88bc9',
@@ -94,46 +77,32 @@ const theme = createMuiTheme({
 	},
 });
 
-const useTitleStyles = makeStyles({
-	root: {
-		fontSize: 20,
-	},
-	subtitle: {
-		marginLeft: 10,
-		fontSize: 20,
-		color: grey[600],
-	},
-});
+export default function App() {
+	// null until we know whether there are cached credentials
+	const [isUserAuthorized, setIsUserAuthorized] = useState(null);
 
-function App({ history }) {
-	useEffect(() => {
-		const path = localStorage.getItem('path');
-		if (path) {
-			localStorage.removeItem('path');
-			history.replace(`/${path}`);
-		}
-	}, []);
-
-	const [isUserAuthorized, setIsUserAuthorized] = useState(false);
-
-	const handleSetIsUserAuthorized = useCallback(async () => {
-		const nextIsUserAuthorized = await isAuthorized();
-		setIsUserAuthorized(nextIsUserAuthorized);
+	const updateIsUserAuthorized = useCallback(async () => {
+		setIsUserAuthorized(await isAuthorized());
 	}, []);
 
 	useEffect(() => {
-		handleSetIsUserAuthorized();
+		isAuthorized().then(setIsUserAuthorized);
 	}, []);
 
 	const handleAuthorize = useCallback(async () => {
-		await authorize();
-		handleSetIsUserAuthorized();
-	}, []);
+		try {
+			await authorize();
+		} catch (e) {
+			// e.g., the user closed the sign-in window
+			console.error(e);
+		}
+		updateIsUserAuthorized();
+	}, [updateIsUserAuthorized]);
 
 	const handleDeauthorize = useCallback(async () => {
 		await deauthorize();
-		handleSetIsUserAuthorized();
-	}, []);
+		updateIsUserAuthorized();
+	}, [updateIsUserAuthorized]);
 
 	const [owner, setOwner] = useState(DEFAULT_OWNER);
 	const [parentEntity, setParentEntity] = useState(DEFAULT_PARENT_ENTITY);
@@ -145,108 +114,47 @@ function App({ history }) {
 	const [longitudeIndicator, setLongitudeIndicator] = useState(DEFAULT_LONGITUDE_INDICATOR);
 	const [roads, setRoads] = useState(DEFAULT_ROADS);
 
-	const [tables, setTables] = useState([]);
-	const [isFetchingTables, setIsFetchingTables] = useState(false);
-	const [tablesError, setTablesError] = useState(null);
+	// Tables and their data are refetched when the user signs in or out, since that may change what they can access
+	const {
+		data: tables,
+		isFetching: isFetchingTables,
+		error: tablesError,
+	} = useDebouncedResource(() => getTables(`${owner}.${parentEntity}`), [owner, parentEntity, isUserAuthorized], {
+		delay: INPUT_TIMEOUT_MS,
+		enabled: !!(owner && parentEntity),
+	});
 
-	const [collection, setCollection] = useState(null);
-	const [isFetchingCollection, setIsFetchingCollection] = useState(false);
-	const [collectionError, setCollectionError] = useState(null);
+	const {
+		data: collection,
+		isFetching: isFetchingCollection,
+		error: collectionError,
+	} = useDebouncedResource(
+		() => getCollection(`${owner}.${parentEntity}.${table}`),
+		[owner, parentEntity, table, isUserAuthorized],
+		{
+			delay: INPUT_TIMEOUT_MS,
+			enabled: !!(owner && parentEntity && table),
+			onSuccess: (nextCollection) => {
+				const { latitude, longitude } = guessLatAndLongIndicators(nextCollection);
+				if (latitude) {
+					setLatitudeIndicator(latitude);
+				}
+				if (longitude) {
+					setLongitudeIndicator(longitude);
+				}
+			},
+		},
+	);
 
-	const fetchTables = useCallback(async () => {
-		if (owner && parentEntity) {
-			try {
-				setIsFetchingTables(true);
-				setTablesError(null);
-				const tables = await getTables(`${owner}.${parentEntity}`);
-				setTables(tables);
-			} catch (e) {
-				setTablesError(e);
-				setTables([]);
-			} finally {
-				setIsFetchingTables(false);
-			}
-		}
-	}, [owner, parentEntity]);
-
-	const [setTablesTimeout, clearTablesTimeout] = useTimeout(fetchTables, INPUT_TIMEOUT_MS);
-
-	useEffect(() => {
-		clearTablesTimeout();
-		setTablesTimeout();
-		return () => {
-			clearTablesTimeout();
-		};
-	}, [fetchTables]);
-
-	const setLatAndLongIndicators = useCallback((collection) => {
-		const { latitude, longitude } = guessLatAndLongIndicators(collection);
-		if (latitude) {
-			setLatitudeIndicator(latitude);
-		}
-		if (longitude) {
-			setLongitudeIndicator(longitude);
-		}
-	}, []);
-
-	const fetchCollection = useCallback(async () => {
-		if (owner && parentEntity && table) {
-			const fullTableReference = `${owner}.${parentEntity}.${table}`;
-			try {
-				setIsFetchingCollection(true);
-				setCollectionError(null);
-				const collection = await getCollection(fullTableReference);
-				setCollection(collection);
-				setLatAndLongIndicators(collection);
-			} catch (e) {
-				setCollectionError(e);
-				setCollection(null);
-			} finally {
-				setIsFetchingCollection(false);
-			}
-		}
-	}, [owner, parentEntity, table]);
-
-	const [setCollectionTimeout, clearCollectionTimeout] = useTimeout(fetchCollection, INPUT_TIMEOUT_MS);
-
-	useEffect(() => {
-		clearCollectionTimeout();
-		setCollectionTimeout();
-		return () => {
-			clearCollectionTimeout();
-		};
-	}, [fetchCollection]);
-
-	const [mapData, setMapData] = useState(null);
-	const [isFetchingMap, setIsFetchingMap] = useState(false);
-	const [mapDataError, setMapDataError] = useState(null);
-
-	const fetchMapData = useCallback(async () => {
-		try {
-			setIsFetchingMap(true);
-			setMapDataError(null);
-			const mapOptions = { region, subregion, latitudeIndicator, longitudeIndicator, roads: [...roads] };
-
-			const mapData = await getBigQueryMap(mapOptions);
-			// const mapData = await getOSMMap(mapOptions);
-			setMapData(mapData);
-		} catch (e) {
-			setMapDataError(e);
-			setMapData(null);
-		} finally {
-			setIsFetchingMap(false);
-		}
-	}, [region, subregion, latitudeIndicator, longitudeIndicator, roads]);
-
-	const [setMapTimeout, clearMapTimeout] = useTimeout(fetchMapData, MAP_TIMEOUT_MS);
-
-	useEffect(() => {
-		clearMapTimeout();
-		setMapTimeout();
-		return () => {
-			clearMapTimeout();
-		};
-	}, [fetchMapData]);
+	// Map data comes from Redivis queries, which require the user to be signed in
+	const {
+		data: mapData,
+		isFetching: isFetchingMap,
+		error: mapDataError,
+	} = useDebouncedResource(() => getMapData({ region, subregion, roads: [...roads] }), [region, subregion, roads], {
+		delay: MAP_TIMEOUT_MS,
+		enabled: isUserAuthorized === true,
+	});
 
 	const [coverageTravelTime, setCoverageTravelTime] = useState(DEFAULT_COVERAGE_TRAVEL_TIME);
 	const [colorScaleBucketCount, setColorScaleBucketCount] = useState(DEFAULT_COLOR_SCALE_BUCKET_COUNT);
@@ -258,128 +166,88 @@ function App({ history }) {
 	const [showPopulationDensity, setShowPopulationDensity] = useState(DEFAULT_SHOW_POPULATION_DENSITY);
 	const [hasDiscreteColorScale, setHasDiscreteColorScale] = useState(DEFAULT_HAS_DISCRETE_COLOR_SCALE);
 	const [pointRadius, setPointRadius] = useState(DEFAULT_POINT_RADIUS);
-	const [colorScale, setColorScale] = useState(DEFAULT_COLOR_SCALE);
-
-	const titleClasses = useTitleStyles();
-
-	const renderHeader = () => {
-		return (
-			<div className={styles.headerWrapper}>
-				<div className={styles.header}>
-					<div className={styles.titleWrapper}>
-						<Typography className={titleClasses.root} component={'h4'}>
-							{'Redivis Labs'}
-						</Typography>
-						<Typography className={titleClasses.subtitle} component={'h4'}>
-							{'Geospatial coverage analyzer'}
-						</Typography>
-					</div>
-					<div className={styles.linkWrapper}>
-						<div className={styles.buttonWrapper}>
-							<Button
-								size={'small'}
-								href={`https://github.com/redivis/geo-coverage#readme`}
-								target={'_blank'}
-							>
-								{'Documentation'}
-							</Button>
-						</div>
-					</div>
-				</div>
-			</div>
-		);
-	};
-
-	const renderBody = () => {
-		return (
-			<div className={styles.bodyWrapper}>
-				<div className={styles.mapWrapper}>
-					<div className={styles.settings}>
-						<Settings
-							owner={owner}
-							setOwner={setOwner}
-							parentEntity={parentEntity}
-							setParentEntity={setParentEntity}
-							table={table}
-							setTable={setTable}
-							region={region}
-							setRegion={setRegion}
-							subregion={subregion}
-							setSubregion={setSubregion}
-							latitudeIndicator={latitudeIndicator}
-							setLatitudeIndicator={setLatitudeIndicator}
-							longitudeIndicator={longitudeIndicator}
-							setLongitudeIndicator={setLongitudeIndicator}
-							roads={roads}
-							setRoads={setRoads}
-							coverageTravelTime={coverageTravelTime}
-							setCoverageTravelTime={setCoverageTravelTime}
-							colorScaleBucketCount={colorScaleBucketCount}
-							setColorScaleBucketCount={setColorScaleBucketCount}
-							resolution={resolution}
-							setResolution={setResolution}
-							hideRoads={hideRoads}
-							useOsmRoadSpeed={useOsmRoadSpeed}
-							showPoints={showPoints}
-							setHideRoads={setHideRoads}
-							setUseOsmRoadSpeed={setUseOsmRoadSpeed}
-							setShowPoints={setShowPoints}
-							showPopulationDensity={showPopulationDensity}
-							setShowPopulationDensity={setShowPopulationDensity}
-							hasDiscreteColorScale={hasDiscreteColorScale}
-							setHasDiscreteColorScale={setHasDiscreteColorScale}
-							pointRadius={pointRadius}
-							setPointRadius={setPointRadius}
-							colorScale={colorScale}
-							setColorScale={setColorScale}
-							tables={tables}
-							isFetchingTables={isFetchingTables}
-							tablesError={tablesError}
-							collection={collection}
-							isFetchingCollection={isFetchingCollection}
-							collectionError={collectionError}
-							isFetchingMap={isFetchingMap}
-							mapDataError={mapDataError}
-						/>
-					</div>
-					<div className={styles.map}>
-						<Map
-							collection={collection}
-							mapData={mapData}
-							region={region}
-							subregion={subregion}
-							latitudeIndicator={latitudeIndicator}
-							longitudeIndicator={longitudeIndicator}
-							roads={roads}
-							coverageTravelTime={coverageTravelTime}
-							colorScaleBucketCount={colorScaleBucketCount}
-							resolution={resolution}
-							hideRoads={hideRoads}
-							useOsmRoadSpeed={useOsmRoadSpeed}
-							showPoints={showPoints}
-							showPopulationDensity={showPopulationDensity}
-							hasDiscreteColorScale={hasDiscreteColorScale}
-							pointRadius={pointRadius}
-							colorScale={colorScale}
-						/>
-					</div>
-				</div>
-			</div>
-		);
-	};
+	const [colorScale] = useState(DEFAULT_COLOR_SCALE);
 
 	return (
 		<ThemeProvider theme={theme}>
 			<div className={styles.appWrapper}>
 				<Header
 					title={'Geospatial coverage analyzer'}
-					isUserAuthorized={isUserAuthorized}
+					isUserAuthorized={!!isUserAuthorized}
 					onAuthorize={handleAuthorize}
 					onDeauthorize={handleDeauthorize}
 				/>
-				{renderBody()}
+				<div className={styles.bodyWrapper}>
+					<div className={styles.mapWrapper}>
+						<div className={styles.settings}>
+							<Settings
+								owner={owner}
+								setOwner={setOwner}
+								parentEntity={parentEntity}
+								setParentEntity={setParentEntity}
+								table={table}
+								setTable={setTable}
+								region={region}
+								setRegion={setRegion}
+								subregion={subregion}
+								setSubregion={setSubregion}
+								latitudeIndicator={latitudeIndicator}
+								setLatitudeIndicator={setLatitudeIndicator}
+								longitudeIndicator={longitudeIndicator}
+								setLongitudeIndicator={setLongitudeIndicator}
+								roads={roads}
+								setRoads={setRoads}
+								coverageTravelTime={coverageTravelTime}
+								setCoverageTravelTime={setCoverageTravelTime}
+								colorScaleBucketCount={colorScaleBucketCount}
+								setColorScaleBucketCount={setColorScaleBucketCount}
+								resolution={resolution}
+								setResolution={setResolution}
+								hideRoads={hideRoads}
+								setHideRoads={setHideRoads}
+								useOsmRoadSpeed={useOsmRoadSpeed}
+								setUseOsmRoadSpeed={setUseOsmRoadSpeed}
+								showPoints={showPoints}
+								setShowPoints={setShowPoints}
+								showPopulationDensity={showPopulationDensity}
+								setShowPopulationDensity={setShowPopulationDensity}
+								hasDiscreteColorScale={hasDiscreteColorScale}
+								setHasDiscreteColorScale={setHasDiscreteColorScale}
+								pointRadius={pointRadius}
+								setPointRadius={setPointRadius}
+								tables={tables || []}
+								isFetchingTables={isFetchingTables}
+								tablesError={tablesError}
+								collection={collection}
+								isFetchingCollection={isFetchingCollection}
+								collectionError={collectionError}
+								isFetchingMap={isFetchingMap}
+								mapDataError={mapDataError}
+							/>
+						</div>
+						<div className={styles.map}>
+							<Map
+								collection={collection}
+								mapData={mapData}
+								isUserAuthorized={isUserAuthorized}
+								onAuthorize={handleAuthorize}
+								latitudeIndicator={latitudeIndicator}
+								longitudeIndicator={longitudeIndicator}
+								coverageTravelTime={coverageTravelTime}
+								colorScaleBucketCount={colorScaleBucketCount}
+								resolution={resolution}
+								hideRoads={hideRoads}
+								useOsmRoadSpeed={useOsmRoadSpeed}
+								showPoints={showPoints}
+								showPopulationDensity={showPopulationDensity}
+								hasDiscreteColorScale={hasDiscreteColorScale}
+								pointRadius={pointRadius}
+								colorScale={colorScale}
+							/>
+						</div>
+					</div>
+				</div>
 			</div>
 		</ThemeProvider>
 	);
 }
-export default withRouter(App);

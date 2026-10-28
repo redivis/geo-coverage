@@ -1,5 +1,4 @@
-import { select as d3Select, selection as d3Selection } from 'd3-selection';
-import { map as d3Map } from 'd3-collection';
+import { select as d3Select, selection as d3Selection } from 'd3';
 
 import styles from './tooltip.css';
 
@@ -128,69 +127,71 @@ export default function tooltip() {
 
 	const arrowHeight = 11;
 
-	const directionCallbacks = d3Map({
-		n: function () {
-			// TODO: not implemented
-			const bbox = this.getBoundingClientRect();
-			return {
-				top: bbox.top - node.offsetHeight - arrowHeight,
-				left: bbox.left - node.offsetWidth / 2 + bbox.width / 2 + 17,
-			};
-		},
-		s: function () {
-			// TODO: not implemented
-			const bbox = this.getBoundingClientRect();
-			return {
-				top: bbox.top + bbox.height + arrowHeight,
-				left: bbox.left - node.offsetWidth + bbox.width / 2 + 17,
-			};
-		},
-		e: function () {
-			const bbox = this.getBoundingClientRect();
-			return {
-				top: bbox.top + bbox.height / 2 - node.offsetHeight / 2,
-				left: bbox.left + bbox.width / 2,
-			};
-		},
-		w: function () {
-			const bbox = this.getBoundingClientRect();
+	const directionCallbacks = new Map(
+		Object.entries({
+			n: function () {
+				// TODO: not implemented
+				const bbox = this.getBoundingClientRect();
+				return {
+					top: bbox.top - node.offsetHeight - arrowHeight,
+					left: bbox.left - node.offsetWidth / 2 + bbox.width / 2 + 17,
+				};
+			},
+			s: function () {
+				// TODO: not implemented
+				const bbox = this.getBoundingClientRect();
+				return {
+					top: bbox.top + bbox.height + arrowHeight,
+					left: bbox.left - node.offsetWidth + bbox.width / 2 + 17,
+				};
+			},
+			e: function () {
+				const bbox = this.getBoundingClientRect();
+				return {
+					top: bbox.top + bbox.height / 2 - node.offsetHeight / 2,
+					left: bbox.left + bbox.width / 2,
+				};
+			},
+			w: function () {
+				const bbox = this.getBoundingClientRect();
 
-			return {
-				top: bbox.top + bbox.height / 2 - node.offsetHeight / 2,
-				left: bbox.left - node.offsetWidth + bbox.width / 2,
-			};
-		},
-		nw: function () {
-			const bbox = this.getBoundingClientRect();
-			return {
-				top: bbox.top - node.offsetHeight,
-				left: bbox.left - node.offsetWidth + bbox.width / 2,
-			};
-		},
-		ne: function () {
-			const bbox = this.getBoundingClientRect();
-			return {
-				top: bbox.top - node.offsetHeight,
-				left: bbox.left + bbox.width / 2,
-			};
-		},
-		sw: function () {
-			const bbox = this.getBoundingClientRect();
-			return {
-				top: bbox.top + bbox.height + arrowHeight,
-				left: bbox.left - node.offsetWidth + bbox.width / 2,
-			};
-		},
-		se: function () {
-			const bbox = this.getBoundingClientRect();
-			return {
-				top: bbox.top + bbox.height + arrowHeight,
-				left: bbox.left + bbox.width / 2,
-			};
-		},
-	});
+				return {
+					top: bbox.top + bbox.height / 2 - node.offsetHeight / 2,
+					left: bbox.left - node.offsetWidth + bbox.width / 2,
+				};
+			},
+			nw: function () {
+				const bbox = this.getBoundingClientRect();
+				return {
+					top: bbox.top - node.offsetHeight,
+					left: bbox.left - node.offsetWidth + bbox.width / 2,
+				};
+			},
+			ne: function () {
+				const bbox = this.getBoundingClientRect();
+				return {
+					top: bbox.top - node.offsetHeight,
+					left: bbox.left + bbox.width / 2,
+				};
+			},
+			sw: function () {
+				const bbox = this.getBoundingClientRect();
+				return {
+					top: bbox.top + bbox.height + arrowHeight,
+					left: bbox.left - node.offsetWidth + bbox.width / 2,
+				};
+			},
+			se: function () {
+				const bbox = this.getBoundingClientRect();
+				return {
+					top: bbox.top + bbox.height + arrowHeight,
+					left: bbox.left + bbox.width / 2,
+				};
+			},
+		}),
+	);
 
-	const directions = directionCallbacks.keys();
+	const directions = [...directionCallbacks.keys()];
 
 	function initNode() {
 		const node = d3Select(document.createElement('div'));

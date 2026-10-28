@@ -1,13 +1,12 @@
 import Heap from 'heap';
 
-export default function(costRaster, sourceRaster, maxCost) {
+export default function (costRaster, sourceRaster, maxCost) {
 	const rowCnt = costRaster.length;
 	const colCnt = costRaster[0].length;
 	const costDistanceRaster = [];
 	const heap = new Heap((a, b) => {
 		return a.cost - b.cost;
 	});
-	let undef;
 	let neighbor;
 	let row;
 	let col;
@@ -118,7 +117,7 @@ export default function(costRaster, sourceRaster, maxCost) {
 
 			if (
 				tempAccumCost < maxCost &&
-				(costDistanceRaster[row][col] === undef || tempAccumCost < costDistanceRaster[row][col].cost)
+				(costDistanceRaster[row][col] === undefined || tempAccumCost < costDistanceRaster[row][col].cost)
 			) {
 				//costDistanceRaster[row][col] = true;
 

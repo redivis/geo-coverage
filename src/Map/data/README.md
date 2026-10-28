@@ -1,4 +1,10 @@
 ## Source data
+The map's boundaries and roads are queried (in `getMapData.js`) from the
+[OpenStreetMap dataset on Redivis](https://redivis.com/datasets/3s4c-0vyfq9524?v=1.0):
+
+- `demo.open_street_map:3s4c:v1_0.admin:fr0h`: administrative boundaries
+- `demo.open_street_map:3s4c:v1_0.roads:y9mg`: roads
+
 These data are derived from the [BigQuery OSM dataset](https://console.cloud.google.com/bigquery?project=geo-coverage&p=bigquery-public-data&d=geo_openstreetmap&page=dataset).
 
 Data transformation steps are laid out below:

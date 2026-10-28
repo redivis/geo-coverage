@@ -1,4 +1,6 @@
-import { Paired as colorBrewerPaired } from 'colorbrewer';
+import colorbrewer from 'colorbrewer';
+
+const colorBrewerPaired = colorbrewer.Paired;
 
 const DEFAULT_COLORS = colorBrewerPaired[12];
 import { scaleLog } from 'd3';
