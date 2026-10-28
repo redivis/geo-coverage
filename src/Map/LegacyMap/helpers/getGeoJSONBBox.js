@@ -1,4 +1,4 @@
-export default function(geojson) {
+export default function (geojson) {
 	let minLat = 90;
 	let maxLat = -90;
 	let minLong = 180;

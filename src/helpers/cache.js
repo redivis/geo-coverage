@@ -1,7 +1,9 @@
-import * as localforage from 'localforage';
-localforage.config({});
+import localforage from 'localforage';
 
-const cacheBuster = require('../../package.json').version;
+import packageJson from '../../package.json';
+
+// Entries from previous versions of the app are ignored
+const cacheBuster = packageJson.version;
 
 export async function set(key, val) {
 	key = normalizeKey(key);

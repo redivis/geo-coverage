@@ -1,4 +1,4 @@
-export default function(arr, obj, comparator) {
+export default function (arr, obj, comparator) {
 	let minIndex = 0;
 	let maxIndex = arr.length - 1;
 	let currentIndex;

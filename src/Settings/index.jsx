@@ -1,54 +1,31 @@
-import PropTypes from 'prop-types';
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 
-import TextField from '@material-ui/core/TextField';
-import MenuItem from '@material-ui/core/MenuItem';
-import Checkbox from '@material-ui/core/Checkbox';
-import FormControl from '@material-ui/core/FormControl';
-import FormControlLabel from '@material-ui/core/FormControlLabel';
-import FormLabel from '@material-ui/core/FormLabel';
-import FormGroup from '@material-ui/core/FormGroup';
-import FormHelperText from '@material-ui/core/FormHelperText';
-import { grey } from '@material-ui/core/colors';
-import CircularProgress from '@material-ui/core/CircularProgress';
-import Switch from '@material-ui/core/Switch';
-import Radio from '@material-ui/core/Radio';
-import RadioGroup from '@material-ui/core/RadioGroup';
-import Chip from '@material-ui/core/Chip';
-import ListItem from '@material-ui/core/ListItem';
-import ListItemText from '@material-ui/core/ListItemText';
-import Badge from '@material-ui/core/Badge';
-import ListItemSecondaryAction from '@material-ui/core/ListItemSecondaryAction';
-import ExpandLess from '@material-ui/icons/ExpandLess';
-import ExpandMore from '@material-ui/icons/ExpandMore';
-import Collapse from '@material-ui/core/Collapse';
-import List from '@material-ui/core/List';
-import Slider from '@material-ui/core/Slider';
-import Tooltip from '@material-ui/core/Tooltip';
-
-import { makeStyles } from '@material-ui/core/styles';
+import Badge from '@mui/material/Badge';
+import Box from '@mui/material/Box';
+import Checkbox from '@mui/material/Checkbox';
+import Chip from '@mui/material/Chip';
+import CircularProgress from '@mui/material/CircularProgress';
+import Collapse from '@mui/material/Collapse';
+import FormControl from '@mui/material/FormControl';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import FormGroup from '@mui/material/FormGroup';
+import FormHelperText from '@mui/material/FormHelperText';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemText from '@mui/material/ListItemText';
+import MenuItem from '@mui/material/MenuItem';
+import Radio from '@mui/material/Radio';
+import RadioGroup from '@mui/material/RadioGroup';
+import Switch from '@mui/material/Switch';
+import TextField from '@mui/material/TextField';
+import Tooltip from '@mui/material/Tooltip';
+import { grey } from '@mui/material/colors';
+import ExpandLess from '@mui/icons-material/ExpandLess';
+import ExpandMore from '@mui/icons-material/ExpandMore';
 
 import countries from 'helpers/countryList';
 import roadOptions from 'helpers/roadOptions';
 
-import * as styles from './styles.css';
-
-const tableReferenceRegex = /^\/tables\/([^.]+)\.([^.]+)\.([^.]+)$/i;
-function getTableReference({ uri = '', name }) {
-	const match = uri.match(tableReferenceRegex);
-	if (match) {
-		const fullReference = {
-			ownerReference: match[1],
-			parentEntityReference: match[2].split(':')[0],
-			qualifiedParentEntityReference: match[2],
-			tableReference: match[3].split(':')[0],
-			qualifiedTableReference: match[3],
-		};
-		return fullReference.tableReference;
-	} else {
-		return name;
-	}
-}
+import styles from './styles.css';
 
 function getSubregionOptions(region, subregion) {
 	const country = countries.find(({ name }) => name === region);
@@ -62,46 +39,31 @@ function getSubregionOptions(region, subregion) {
 	return subregions;
 }
 
-const useFormStyles = makeStyles({
-	formControl: {
-		width: '100%',
-	},
-	formControlLabel: {
-		marginTop: 7,
-		marginBottom: 15,
-	},
-	radioGroup: {
-		marginLeft: 11,
-	},
-	pending: {
-		color: grey[500],
-		marginRight: 5,
-	},
-	collapse: {
-		entered: {
-			marginBottom: 10,
-		},
-	},
-	listItem: {
-		width: 'calc(100% + 60px)',
-		color: grey[900],
-		paddingLeft: 30,
-		marginLeft: -30,
-		marginRight: -30,
-	},
-	listItemText: {
-		primary: {
-			fontWeight: 'bold',
-		},
-	},
-	helperText: {
-		color: grey[500],
-		marginBottom: 0,
-		'&:not(:last-of-type)': {
-			marginBottom: 0,
-		},
-	},
-});
+const formControlSx = { width: '100%' };
+const fieldSx = { mt: '7px', mb: '15px' };
+const switchSx = { mt: '7px', mb: '15px', ml: 0 };
+const pendingSx = { color: grey[500], mr: '5px' };
+const collapseSx = { '&.MuiCollapse-entered': { mb: '10px' } };
+const listItemSx = {
+	width: 'calc(100% + 60px)',
+	color: grey[900],
+	pl: '30px',
+	ml: '-30px',
+	mr: '-30px',
+};
+const listItemTextSlotProps = { primary: { sx: { fontWeight: 'bold' } } };
+const listItemTextSx = { flexShrink: 0, mr: '10px' };
+const helperTextSx = { color: grey[500], mb: 0 };
+
+function SectionHeader({ label, isOpen, onToggle, children }) {
+	return (
+		<ListItemButton onClick={onToggle} sx={listItemSx}>
+			<ListItemText primary={label} slotProps={listItemTextSlotProps} sx={listItemTextSx} />
+			{children}
+			{isOpen ? <ExpandMore /> : <ExpandLess />}
+		</ListItemButton>
+	);
+}
 
 export default function Settings({
 	owner,
@@ -138,8 +100,6 @@ export default function Settings({
 	setHasDiscreteColorScale,
 	pointRadius,
 	setPointRadius,
-	colorScale,
-	setColorScale,
 	tables,
 	isFetchingTables,
 	tablesError,
@@ -152,90 +112,37 @@ export default function Settings({
 	const resetLatAndLong = useCallback(() => {
 		setLatitudeIndicator('');
 		setLongitudeIndicator('');
-	}, []);
+	}, [setLatitudeIndicator, setLongitudeIndicator]);
 
-	const handleSetOwner = useCallback((e) => {
+	const handleSetOwner = (e) => {
 		setOwner(e.target.value);
 		resetLatAndLong();
-	}, []);
+	};
 
-	const handleSetParentEntity = useCallback((e) => {
+	const handleSetParentEntity = (e) => {
 		setParentEntity(e.target.value);
 		resetLatAndLong();
-	}, []);
+	};
 
-	const handleSetTable = useCallback((e) => {
+	const handleSetTable = (e) => {
 		setTable(e.target.value);
 		resetLatAndLong();
-	}, []);
+	};
 
-	const handleSetRegion = useCallback((e) => {
+	const handleSetRegion = (e) => {
 		setRegion(e.target.value);
 		setSubregion('');
-	}, []);
+	};
 
-	const handleSetSubregion = useCallback((e) => {
-		setSubregion(e.target.value);
-	}, []);
-
-	const handleSetLatitudeIndicator = useCallback((e) => {
-		setLatitudeIndicator(e.target.value);
-	}, []);
-
-	const handleSetLongitudeIndicator = useCallback((e) => {
-		setLongitudeIndicator(e.target.value);
-	}, []);
-
-	const handleSetRoads = useCallback(
-		(e) => {
-			const nextSelectedRoadsSet = new Set(roads);
-			if (e.target.checked) {
-				nextSelectedRoadsSet.add(e.target.name);
-			} else {
-				nextSelectedRoadsSet.delete(e.target.name);
-			}
-			setRoads([...nextSelectedRoadsSet]);
-		},
-		[roads],
-	);
-
-	const handleSetCoverageTravelTime = useCallback((e) => {
-		setCoverageTravelTime(e.target.value);
-	}, []);
-
-	const handleSetColorScaleBucketCount = useCallback((e) => {
-		setColorScaleBucketCount(e.target.value);
-	}, []);
-
-	const handleSetResolution = useCallback((e) => {
-		setResolution(e.target.value);
-	}, []);
-
-	const handleSetShowPoints = useCallback((e) => {
-		setShowPoints(e.target.checked);
-	}, []);
-
-	const handleSetHideRoads = useCallback((e) => {
-		setHideRoads(e.target.checked);
-	}, []);
-
-	const handleSetUseOsmRoadSpeed = useCallback((e) => {
-		setUseOsmRoadSpeed(e.target.checked);
-	}, []);
-
-	const handleSetShowPopulationDensity = useCallback((e) => {
-		setShowPopulationDensity(e.target.checked);
-	}, []);
-
-	const handleSetHasDiscreteColorScale = useCallback((e) => {
-		setHasDiscreteColorScale(e.target.checked);
-	}, []);
-
-	const handleSetPointRadius = useCallback((e) => {
-		setPointRadius(e.target.value);
-	}, []);
-
-	const formClasses = useFormStyles();
+	const handleSetRoads = (e) => {
+		const nextSelectedRoadsSet = new Set(roads);
+		if (e.target.checked) {
+			nextSelectedRoadsSet.add(e.target.name);
+		} else {
+			nextSelectedRoadsSet.delete(e.target.name);
+		}
+		setRoads([...nextSelectedRoadsSet]);
+	};
 
 	const selectedRoadsSet = new Set(roads);
 
@@ -247,155 +154,122 @@ export default function Settings({
 	const [showRoads, setShowRoads] = useState(false);
 	const [showSettings, setShowSettings] = useState(false);
 
-	const selectedListTable = tables.find(({ uri, name }) => getTableReference({ uri, name }) === table.toLowerCase());
+	const selectedListTable = tables.find(({ name }) => name === table.toLowerCase());
+	const variableNames = (collection?.variables || []).map(({ name }) => name);
 
 	return (
 		<div className={styles.sideBarWrapper}>
 			<div className={styles.bodyWrapper}>
 				<div className={styles.sectionWrapper}>
-					<FormControl component={'fieldset'} error={!!collectionError} className={formClasses.formControl}>
-						<ListItem
-							button={true}
-							onClick={() => setShowTableOptions(!showTableOptions)}
-							className={formClasses.listItem}
+					<FormControl component={'fieldset'} error={!!(collectionError || tablesError)} sx={formControlSx}>
+						<SectionHeader
+							label={'Data'}
+							isOpen={showTableOptions}
+							onToggle={() => setShowTableOptions(!showTableOptions)}
 						>
-							<ListItemText className={formClasses.listItemText}>{'Data'}</ListItemText>
 							{(isFetchingCollection || isFetchingTables) && (
-								<CircularProgress size={20} className={formClasses.pending} />
+								<CircularProgress size={20} sx={pendingSx} />
 							)}
 							{table && (
 								<Badge badgeContent={''} variant={'dot'} color={'error'} invisible={!collectionError}>
 									<Chip size={'small'} label={`${parentEntity}.${table}`} />
 								</Badge>
 							)}
-							{showTableOptions ? <ExpandMore edge={'end'} /> : <ExpandLess edge={'end'} />}
-						</ListItem>
-						<Collapse in={showTableOptions} className={formClasses.collapse}>
+						</SectionHeader>
+						<Collapse in={showTableOptions} sx={collapseSx}>
 							<FormGroup>
-								<FormControlLabel
-									control={
+								<Box sx={fieldSx}>
+									<TextField
+										name={'owner'}
+										label={'Owner'}
+										value={owner}
+										onChange={handleSetOwner}
+										fullWidth={true}
+										placeholder={'User or organization'}
+									/>
+								</Box>
+								<Box sx={fieldSx}>
+									<TextField
+										name={'parentEntity'}
+										label={'Dataset/Workflow'}
+										value={parentEntity}
+										onChange={handleSetParentEntity}
+										fullWidth={true}
+										placeholder={'dataset or workflow name'}
+									/>
+								</Box>
+								<Box sx={fieldSx}>
+									{tables.length ? (
 										<TextField
-											name={'owner'}
-											label={'Owner'}
-											value={owner}
-											onChange={handleSetOwner}
+											name={'table'}
+											label={'Table'}
+											value={selectedListTable ? selectedListTable.name : ''}
+											select={true}
+											onChange={handleSetTable}
 											fullWidth={true}
-											variant={'outlined'}
-											placeholder={'User or organization'}
-										/>
-									}
-									className={formClasses.formControlLabel}
-								/>
-								<FormControlLabel
-									control={
+										>
+											{tables.map(({ name }) => (
+												<MenuItem key={name} value={name}>
+													{name}
+												</MenuItem>
+											))}
+										</TextField>
+									) : (
 										<TextField
-											name={'parentEntity'}
-											label={'Dataset/Project'}
-											value={parentEntity}
-											onChange={handleSetParentEntity}
+											name={'table'}
+											label={'Table'}
+											value={table}
+											onChange={handleSetTable}
 											fullWidth={true}
-											variant={'outlined'}
-											placeholder={'dataset or project name'}
+											placeholder={'table name'}
 										/>
-									}
-									className={formClasses.formControlLabel}
-								/>
-								<FormControlLabel
-									control={
-										tables.length ? (
-											<TextField
-												name={'table'}
-												label={'Table'}
-												value={selectedListTable ? getTableReference(selectedListTable) : ''}
-												select={true}
-												onChange={handleSetTable}
-												fullWidth={true}
-												variant={'outlined'}
-												placeholder={'table name'}
-											>
-												{tables.map(({ uri, name }) => {
-													const tableReference = getTableReference({ uri, name });
-													return (
-														<MenuItem key={tableReference} value={tableReference}>
-															{tableReference}
-														</MenuItem>
-													);
-												})}
-												}
-											</TextField>
-										) : (
-											<TextField
-												name={'table'}
-												label={'Table'}
-												value={table}
-												onChange={handleSetTable}
-												fullWidth={true}
-												variant={'outlined'}
-												placeholder={'table identifier'}
-											/>
-										)
-									}
-									className={formClasses.formControlLabel}
-								/>
+									)}
+								</Box>
 							</FormGroup>
 							<FormHelperText>{collectionError?.message || tablesError?.message || ''}</FormHelperText>
 						</Collapse>
 					</FormControl>
 				</div>
 				<div className={styles.sectionWrapper}>
-					<FormControl component={'fieldset'} error={!!mapDataError} className={formClasses.formControl}>
-						<ListItem
-							button={true}
-							onClick={() => setShowRegion(!showRegion)}
-							className={formClasses.listItem}
-						>
-							<ListItemText primary={'Region'} className={formClasses.listItemText} />
-							{isFetchingMap && <CircularProgress size={20} className={formClasses.pending} />}
+					<FormControl component={'fieldset'} error={!!mapDataError} sx={formControlSx}>
+						<SectionHeader label={'Region'} isOpen={showRegion} onToggle={() => setShowRegion(!showRegion)}>
+							{isFetchingMap && <CircularProgress size={20} sx={pendingSx} />}
 							{region && <Chip size={'small'} label={`${region}${subregion ? ` (${subregion})` : ''}`} />}
-							{showRegion ? <ExpandMore edge={'end'} /> : <ExpandLess edge={'end'} />}
-						</ListItem>
-						<Collapse in={showRegion} className={formClasses.collapse}>
+						</SectionHeader>
+						<Collapse in={showRegion} sx={collapseSx}>
 							<FormGroup>
-								<FormControlLabel
-									control={
-										<TextField
-											name={'region'}
-											label={'Country'}
-											value={region}
-											select={true}
-											onChange={handleSetRegion}
-											fullWidth={true}
-											variant={'outlined'}
-										>
-											{countries.map(({ name }) => (
-												<MenuItem key={name} value={name}>
-													{name}
-												</MenuItem>
-											))}
-										</TextField>
-									}
-									className={formClasses.formControlLabel}
-								/>
-								<FormControlLabel
-									control={
-										<TextField
-											name={'subregion'}
-											label={'Subregion (optional)'}
-											value={subregion}
-											select={true}
-											onChange={handleSetSubregion}
-											fullWidth={true}
-											variant={'outlined'}
-										>
-											{subregions.map(({ name }) => (
-												<MenuItem key={name} value={name}>
-													{name || '(deselect subregion)'}
-												</MenuItem>
-											))}
-										</TextField>
-									}
-									className={formClasses.formControlLabel}
-								/>
+								<Box sx={fieldSx}>
+									<TextField
+										name={'region'}
+										label={'Country'}
+										value={region}
+										select={true}
+										onChange={handleSetRegion}
+										fullWidth={true}
+									>
+										{countries.map(({ name }) => (
+											<MenuItem key={name} value={name}>
+												{name}
+											</MenuItem>
+										))}
+									</TextField>
+								</Box>
+								<Box sx={fieldSx}>
+									<TextField
+										name={'subregion'}
+										label={'Subregion (optional)'}
+										value={subregion}
+										select={true}
+										onChange={(e) => setSubregion(e.target.value)}
+										fullWidth={true}
+									>
+										{subregions.map(({ name }) => (
+											<MenuItem key={name} value={name}>
+												{name || '(deselect subregion)'}
+											</MenuItem>
+										))}
+									</TextField>
+								</Box>
 							</FormGroup>
 							<FormHelperText>{mapDataError?.message || ''}</FormHelperText>
 						</Collapse>
@@ -406,15 +280,14 @@ export default function Settings({
 						component={'fieldset'}
 						required={true}
 						error={!latitudeIndicator || !longitudeIndicator}
-						className={formClasses.formControl}
+						sx={formControlSx}
 					>
-						<ListItem
-							button={true}
-							onClick={() => setShowLatLong(!showLatLong)}
-							className={formClasses.listItem}
+						<SectionHeader
+							label={'Latitude & longitude'}
+							isOpen={showLatLong}
+							onToggle={() => setShowLatLong(!showLatLong)}
 						>
-							<ListItemText primary={'Latitude & longitude'} className={formClasses.listItemText} />
-							{isFetchingCollection && <CircularProgress size={20} className={formClasses.pending} />}
+							{isFetchingCollection && <CircularProgress size={20} sx={pendingSx} />}
 							<Badge
 								badgeContent={''}
 								variant={'dot'}
@@ -426,53 +299,41 @@ export default function Settings({
 									label={`${latitudeIndicator || '_'}/${longitudeIndicator || '_'}`}
 								/>
 							</Badge>
-
-							{showLatLong ? <ExpandMore edge={'end'} /> : <ExpandLess edge={'end'} />}
-						</ListItem>
-						<Collapse in={showLatLong} className={formClasses.collapse}>
+						</SectionHeader>
+						<Collapse in={showLatLong} sx={collapseSx}>
 							<FormGroup>
-								<FormControlLabel
-									control={
-										<TextField
-											name={'latitudeIndicator'}
-											label={'Latitude'}
-											value={latitudeIndicator}
-											select={true}
-											onChange={handleSetLatitudeIndicator}
-											fullWidth={true}
-											variant={'outlined'}
-											placeholder={'Select variable'}
-										>
-											{(collection?.indicators || []).map(({ variable: { name } = {} }) => (
-												<MenuItem key={name} value={name}>
-													{name}
-												</MenuItem>
-											))}
-										</TextField>
-									}
-									className={formClasses.formControlLabel}
-								/>
-								<FormControlLabel
-									control={
-										<TextField
-											name={'longitudeIndicator'}
-											label={'Longitude'}
-											value={longitudeIndicator}
-											select={true}
-											onChange={handleSetLongitudeIndicator}
-											fullWidth={true}
-											variant={'outlined'}
-											placeholder={'Select variable'}
-										>
-											{(collection?.indicators || []).map(({ variable: { name } = {} }) => (
-												<MenuItem key={name} value={name}>
-													{name}
-												</MenuItem>
-											))}
-										</TextField>
-									}
-									className={formClasses.formControlLabel}
-								/>
+								<Box sx={fieldSx}>
+									<TextField
+										name={'latitudeIndicator'}
+										label={'Latitude'}
+										value={variableNames.includes(latitudeIndicator) ? latitudeIndicator : ''}
+										select={true}
+										onChange={(e) => setLatitudeIndicator(e.target.value)}
+										fullWidth={true}
+									>
+										{variableNames.map((name) => (
+											<MenuItem key={name} value={name}>
+												{name}
+											</MenuItem>
+										))}
+									</TextField>
+								</Box>
+								<Box sx={fieldSx}>
+									<TextField
+										name={'longitudeIndicator'}
+										label={'Longitude'}
+										value={variableNames.includes(longitudeIndicator) ? longitudeIndicator : ''}
+										select={true}
+										onChange={(e) => setLongitudeIndicator(e.target.value)}
+										fullWidth={true}
+									>
+										{variableNames.map((name) => (
+											<MenuItem key={name} value={name}>
+												{name}
+											</MenuItem>
+										))}
+									</TextField>
+								</Box>
 								{!isFetchingCollection && (!latitudeIndicator || !longitudeIndicator) && (
 									<FormHelperText>{`Select ${
 										!latitudeIndicator
@@ -485,38 +346,34 @@ export default function Settings({
 					</FormControl>
 				</div>
 				<div className={styles.sectionWrapper}>
-					<FormControl component={'fieldset'} className={formClasses.formControl}>
-						<ListItem
-							button={true}
-							onClick={() => setShowRoads(!showRoads)}
-							className={formClasses.listItem}
-						>
-							<ListItemText primary={'Roads'} className={formClasses.listItemText} />
+					<FormControl component={'fieldset'} sx={formControlSx}>
+						<SectionHeader label={'Roads'} isOpen={showRoads} onToggle={() => setShowRoads(!showRoads)}>
 							<Tooltip
 								title={
-									<React.Fragment>
-										<a href={'https://wiki.openstreetmap.org/wiki/Key:highway'} target={'_blank'}>
+									<>
+										<a
+											href={'https://wiki.openstreetmap.org/wiki/Key:highway'}
+											target={'_blank'}
+											rel={'noreferrer'}
+										>
 											{'Learn more'}
 										</a>
 										<span>{' about OpenStreetMap roads'}</span>
-									</React.Fragment>
+									</>
 								}
-								interactive={true}
 								placement={'bottom-start'}
 								arrow={true}
 							>
 								<Chip size={'small'} label={selectedRoadsSet.size} />
 							</Tooltip>
-							{showRoads ? <ExpandMore edge={'end'} /> : <ExpandLess edge={'end'} />}
-						</ListItem>
-						<Collapse in={showRoads} className={formClasses.collapse}>
+						</SectionHeader>
+						<Collapse in={showRoads} sx={collapseSx}>
 							<FormGroup>
 								{roadOptions.map(({ label, name }) => (
 									<FormControlLabel
 										key={name}
 										control={
 											<Checkbox
-												key={name}
 												name={name}
 												checked={selectedRoadsSet.has(name)}
 												color={'primary'}
@@ -531,127 +388,109 @@ export default function Settings({
 					</FormControl>
 				</div>
 				<div className={styles.sectionWrapper}>
-					<FormControl component={'fieldset'} className={formClasses.formControl}>
-						<ListItem
-							button={true}
-							onClick={() => setShowSettings(!showSettings)}
-							className={formClasses.listItem}
-						>
-							<ListItemText primary={'Settings'} className={formClasses.listItemText} />
-							{showSettings ? <ExpandMore edge={'end'} /> : <ExpandLess edge={'end'} />}
-						</ListItem>
-						<Collapse in={showSettings} className={formClasses.collapse}>
+					<FormControl component={'fieldset'} sx={formControlSx}>
+						<SectionHeader
+							label={'Settings'}
+							isOpen={showSettings}
+							onToggle={() => setShowSettings(!showSettings)}
+						/>
+						<Collapse in={showSettings} sx={collapseSx}>
 							<FormGroup>
-								<FormControlLabel
-									control={
-										<TextField
-											name={'coverageTravelTime'}
-											label={'Coverage travel time (mins)'}
-											value={coverageTravelTime}
-											onChange={handleSetCoverageTravelTime}
-											fullWidth={true}
-											variant={'outlined'}
-										/>
-									}
-									className={formClasses.formControlLabel}
-								/>
-								<FormControlLabel
-									control={
-										<RadioGroup
-											aria-label={'Resolution'}
-											name={'resolution'}
-											value={resolution}
-											color={'primary'}
-											onChange={handleSetResolution}
-											className={formClasses.radioGroup}
-										>
-											<FormHelperText className={formClasses.helperText}>
-												{'Resolution'}
-											</FormHelperText>
-											<FormControlLabel control={<Radio />} value={'1024'} label={'1024'} />
-											<FormControlLabel control={<Radio />} value={'2048'} label={'2048'} />
-											<FormControlLabel control={<Radio />} value={'3072'} label={'3072'} />
-										</RadioGroup>
-									}
-									className={formClasses.formControlLabel}
-								/>
-								<FormControlLabel
-									control={
-										<TextField
-											name={'colorScaleBucketCount'}
-											label={'Color scale buckets'}
-											value={colorScaleBucketCount}
-											onChange={handleSetColorScaleBucketCount}
-											fullWidth={true}
-											variant={'outlined'}
-										/>
-									}
-									className={formClasses.formControlLabel}
-								/>
+								<Box sx={fieldSx}>
+									<TextField
+										name={'coverageTravelTime'}
+										label={'Coverage travel time (mins)'}
+										value={coverageTravelTime}
+										onChange={(e) => setCoverageTravelTime(e.target.value)}
+										fullWidth={true}
+									/>
+								</Box>
+								<Box sx={{ ...fieldSx, ml: '11px' }}>
+									<FormHelperText sx={helperTextSx}>{'Resolution'}</FormHelperText>
+									<RadioGroup
+										aria-label={'Resolution'}
+										name={'resolution'}
+										value={resolution}
+										onChange={(e) => setResolution(e.target.value)}
+									>
+										<FormControlLabel control={<Radio />} value={'1024'} label={'1024'} />
+										<FormControlLabel control={<Radio />} value={'2048'} label={'2048'} />
+										<FormControlLabel control={<Radio />} value={'3072'} label={'3072'} />
+									</RadioGroup>
+								</Box>
+								<Box sx={fieldSx}>
+									<TextField
+										name={'colorScaleBucketCount'}
+										label={'Color scale buckets'}
+										value={colorScaleBucketCount}
+										onChange={(e) => setColorScaleBucketCount(e.target.value)}
+										fullWidth={true}
+									/>
+								</Box>
 								<FormControlLabel
 									control={
 										<Switch
 											name={'showPopulationDensity'}
 											checked={showPopulationDensity}
-											onChange={handleSetShowPopulationDensity}
+											onChange={(e) => setShowPopulationDensity(e.target.checked)}
 										/>
 									}
 									label={'Show population density'}
-									className={formClasses.formControlLabel}
+									sx={switchSx}
 								/>
 								<FormControlLabel
 									control={
 										<Switch
 											name={'hasDiscreteColorScale'}
 											checked={hasDiscreteColorScale}
-											onChange={handleSetHasDiscreteColorScale}
+											onChange={(e) => setHasDiscreteColorScale(e.target.checked)}
 										/>
 									}
 									label={'Discrete color scale'}
-									className={formClasses.formControlLabel}
+									sx={switchSx}
 								/>
 								<FormControlLabel
 									control={
-										<Switch name={'hideRoads'} checked={hideRoads} onChange={handleSetHideRoads} />
+										<Switch
+											name={'hideRoads'}
+											checked={hideRoads}
+											onChange={(e) => setHideRoads(e.target.checked)}
+										/>
 									}
 									label={'Hide roads (better performance)'}
-									className={formClasses.formControlLabel}
+									sx={switchSx}
 								/>
 								<FormControlLabel
 									control={
 										<Switch
 											name={'useOsmRoadSpeed'}
 											checked={useOsmRoadSpeed}
-											onChange={handleSetUseOsmRoadSpeed}
+											onChange={(e) => setUseOsmRoadSpeed(e.target.checked)}
 										/>
 									}
 									label={'Use OSM road speeds'}
-									className={formClasses.formControlLabel}
+									sx={switchSx}
 								/>
 								<FormControlLabel
 									control={
 										<Switch
 											name={'showPoints'}
 											checked={showPoints}
-											onChange={handleSetShowPoints}
+											onChange={(e) => setShowPoints(e.target.checked)}
 										/>
 									}
 									label={'Show points'}
-									className={formClasses.formControlLabel}
+									sx={switchSx}
 								/>
-								<FormControlLabel
-									control={
-										<TextField
-											name={'pointRadius'}
-											label={'Point radius (px)'}
-											value={pointRadius}
-											onChange={handleSetPointRadius}
-											fullWidth={true}
-											variant={'outlined'}
-										/>
-									}
-									className={formClasses.formControlLabel}
-								/>
+								<Box sx={fieldSx}>
+									<TextField
+										name={'pointRadius'}
+										label={'Point radius (px)'}
+										value={pointRadius}
+										onChange={(e) => setPointRadius(e.target.value)}
+										fullWidth={true}
+									/>
+								</Box>
 							</FormGroup>
 						</Collapse>
 					</FormControl>
@@ -660,45 +499,3 @@ export default function Settings({
 		</div>
 	);
 }
-
-Settings.propTypes = {
-	owner: PropTypes.string,
-	setOwner: PropTypes.func,
-	parentEntity: PropTypes.string,
-	setParentEntity: PropTypes.func,
-	table: PropTypes.string,
-	setTable: PropTypes.func,
-	tables: PropTypes.arrayOf(PropTypes.object),
-	region: PropTypes.string,
-	setRegion: PropTypes.func,
-	subregion: PropTypes.string,
-	setSubregion: PropTypes.func,
-	latitudeIndicator: PropTypes.string,
-	setLatitudeIndicator: PropTypes.func,
-	longitudeIndicator: PropTypes.string,
-	setLongitudeIndicator: PropTypes.func,
-	roads: PropTypes.arrayOf(PropTypes.string),
-	setRoads: PropTypes.func,
-	coverageTravelTime: PropTypes.string,
-	setCoverageTravelTime: PropTypes.func,
-	colorScaleBucketCount: PropTypes.string,
-	setColorScaleBucketCount: PropTypes.func,
-	resolution: PropTypes.string,
-	setResolution: PropTypes.func,
-	hideRoads: PropTypes.bool,
-	setHideRoads: PropTypes.func,
-	useOsmRoadSpeed: PropTypes.bool,
-	setUseOsmRoadSpeed: PropTypes.func,
-	showPoints: PropTypes.bool,
-	setShowPoints: PropTypes.func,
-	showPopulationDensity: PropTypes.bool,
-	setShowPopulationDensity: PropTypes.func,
-	pointRadius: PropTypes.string,
-	setPointRadius: PropTypes.func,
-	colorScale: PropTypes.arrayOf(PropTypes.string),
-	setColorScale: PropTypes.func,
-	collection: PropTypes.object,
-	isFetchingCollection: PropTypes.bool,
-	collectionError: PropTypes.object,
-	mapDataError: PropTypes.object,
-};

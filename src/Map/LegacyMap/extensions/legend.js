@@ -1,6 +1,5 @@
-import $ from 'jquery';
 import { format as d3Format } from 'd3';
-import * as styles from '../styles.css';
+import styles from '../styles.css';
 
 const LEGEND_WIDTH = 40;
 const LEGEND_HEIGHT = 400;

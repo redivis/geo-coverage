@@ -1,36 +1,19 @@
-import retryableFetch from './retryableFetch';
-import { getCredentials, login, logout } from './auth';
+import redivis from 'redivis';
 
-export default async function (parentEntityReference) {
-	let token = getCredentials();
-	if (!token) {
-		throw new Error('Not logged in');
-	}
-	let tablesResponse = await retryableFetch(`https://redivis.com/api/v1/datasets/${parentEntityReference}/tables`, {
-		headers: {
-			Authorization: `Bearer ${token}`,
-		},
-	});
-	if (tablesResponse.status === 401) {
-		logout();
-	} else if (tablesResponse.status === 404) {
-		tablesResponse = await retryableFetch(`https://redivis.com/api/v1/projects/${parentEntityReference}/tables`, {
-			headers: {
-				Authorization: `Bearer ${token}`,
-			},
-		});
-		if (tablesResponse.status === 401) {
-			logout();
+// Lists the tables in a dataset or workflow, e.g. `owner.dataset_name`
+export default async function getTables(reference) {
+	let tables;
+	try {
+		tables = await redivis.dataset(reference).listTables();
+	} catch (e) {
+		if (!(e instanceof redivis.errors.NotFoundError)) {
+			throw e;
 		}
+		tables = await redivis.workflow(reference).listTables();
 	}
-
-	tablesResponse = await tablesResponse.json();
-
-	if (tablesResponse.error) {
-		throw new Error(
-			`An error occurred when fetching tables. ${tablesResponse.error.message}: ${tablesResponse.error.description}`,
-		);
-	}
-
-	return tablesResponse.results;
+	return tables.map((table) => ({
+		// The table's reference within its container, without its reference id (e.g. `my_table`)
+		name: table.scopedReference.split(':')[0].toLowerCase(),
+		label: table.properties.name,
+	}));
 }

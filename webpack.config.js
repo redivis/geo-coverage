@@ -1,22 +1,26 @@
-/* eslint-disable import/no-commonjs*/
-/* eslint-disable import/no-nodejs-modules*/
-/* eslint-disable import/unambiguous*/
 const path = require('path');
 const webpack = require('webpack');
 
-module.exports = function ({ env } = {}) {
-	const output = {
+const ROOT_PATH = '/geo-coverage';
+
+module.exports = function (env = {}) {
+	const isDevelopment = !!env.development;
+
+	return {
 		context: __dirname,
 		entry: './src/index.jsx',
 		output: {
-			path: `${__dirname}/dist`,
+			path: path.join(__dirname, 'dist'),
+			publicPath: `${ROOT_PATH}/dist/`,
 			filename: '[name].js',
+			chunkFilename: '[name].[contenthash].js',
 		},
 		target: 'web',
-		mode: env === 'development' ? 'development' : 'production',
+		mode: isDevelopment ? 'development' : 'production',
+		devtool: isDevelopment ? 'eval-cheap-module-source-map' : false,
 		plugins: [
 			new webpack.DefinePlugin({
-				'process.env.ROOT_PATH': JSON.stringify('/geo-coverage'),
+				'process.env.ROOT_PATH': JSON.stringify(ROOT_PATH),
 			}),
 		],
 		module: {
@@ -24,39 +28,26 @@ module.exports = function ({ env } = {}) {
 				{
 					test: /\.jsx?$/,
 					exclude: /node_modules/,
-					use: [
-						{
-							loader: 'babel-loader',
-							options: {
-								cacheDirectory: env === 'development',
-								sourceType: 'unambiguous',
-								presets: [
-									[require.resolve('@babel/preset-react'), { useSpread: true }],
-									[
-										require.resolve('@babel/preset-env'),
-										{
-											targets: ['safari 14.0', 'firefox 84', 'chrome 88'],
-											modules: false,
-											bugfixes: true, // Note: will be default in Babel 8
-											useBuiltIns: 'usage',
-											corejs: { version: 3, proposals: true },
-										},
-									],
-								],
-								plugins: [require.resolve('@babel/plugin-proposal-export-default-from')],
-							},
+					use: {
+						loader: 'babel-loader',
+						options: {
+							cacheDirectory: isDevelopment,
+							presets: ['@babel/preset-react', '@babel/preset-env'],
 						},
-					],
+					},
 				},
 				{
 					test: /\.css$/,
 					exclude: /node_modules/,
 					use: [
-						{ loader: 'style-loader' },
+						'style-loader',
 						{
 							loader: 'css-loader',
 							options: {
 								modules: {
+									// The top-level stylesheet styles the page itself (e.g. #root), so isn't scoped
+									mode: (resourcePath) =>
+										resourcePath === path.join(__dirname, 'src', 'styles.css') ? 'global' : 'local',
 									localIdentName: '[name]_[local]-[hash:base64:4]',
 									exportLocalsConvention: 'as-is',
 									namedExport: false,
@@ -71,24 +62,31 @@ module.exports = function ({ env } = {}) {
 					test: /\.css$/,
 					include: /node_modules/,
 					sideEffects: true,
-					use: [
-						{
-							loader: 'style-loader',
-						},
-						{ loader: 'css-loader' },
-					],
+					use: ['style-loader', 'css-loader'],
 				},
 			],
 		},
 		resolve: {
-			modules: [`${__dirname}/src`, `node_modules`],
-			extensions: ['*', '.js', '.jsx'],
+			modules: [path.join(__dirname, 'src'), 'node_modules'],
+			extensions: ['.js', '.jsx'],
+		},
+		performance: {
+			// The app is a single, large page; don't warn about its bundle size
+			hints: false,
+		},
+		devServer: {
+			port: 8080,
+			static: {
+				directory: path.join(__dirname, 'assets'),
+				publicPath: `${ROOT_PATH}/assets`,
+			},
+			setupMiddlewares(middlewares, devServer) {
+				devServer.app.get('/', (req, res) => res.redirect(ROOT_PATH));
+				devServer.app.get([ROOT_PATH, `${ROOT_PATH}/`], (req, res) =>
+					res.sendFile(path.join(__dirname, 'index.html')),
+				);
+				return middlewares;
+			},
 		},
 	};
-
-	if (env === 'development') {
-		output.devtool = 'eval-cheap-module-source-map';
-	}
-
-	return output;
 };

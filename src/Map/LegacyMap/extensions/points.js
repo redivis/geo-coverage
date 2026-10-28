@@ -1,5 +1,5 @@
 import { scaleLinear as d3ScaleLinear, min as d3Min, max as d3Max } from 'd3';
-import * as styles from '../styles.css';
+import styles from '../styles.css';
 import { onPointHoverCallbacks, onPointClickCallbacks } from '../index';
 
 export function show(showFiltered) {
@@ -37,13 +37,13 @@ export function draw(map, points) {
 			.attr('cx', (d) => d.x)
 			.attr('cy', (d) => d.y)
 			.attr('r', 2)
-			.on('mouseenter', function (d) {
+			.on('mouseenter', function (event, d) {
 				onPointHoverCallbacks.get(map).forEach((cbs) => cbs[0].call(this, d));
 			})
-			.on('mouseleave', function (d) {
+			.on('mouseleave', function (event, d) {
 				onPointHoverCallbacks.get(map).forEach((cbs) => cbs[1].call(this, d));
 			})
-			.on('click', function (d) {
+			.on('click', function (event, d) {
 				onPointClickCallbacks.get(map).forEach((cb) => cb.call(this, d));
 			});
 
@@ -55,7 +55,9 @@ export function resize(val, { indicator } = {}) {
 	const selection = this.svg.select(`.${styles.points}`).selectAll(`.${styles.point}`);
 
 	if (isNaN(parseFloat(val))) {
-	} else if (val instanceof Array && indicator) {
+		return;
+	}
+	if (val instanceof Array && indicator) {
 		const scale = d3ScaleLinear().range(val);
 		const valueArray = [];
 		selection.each((d) => {

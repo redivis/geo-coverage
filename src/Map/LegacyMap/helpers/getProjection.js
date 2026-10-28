@@ -1,4 +1,4 @@
-import { geoAlbersUsa, geoEquirectangular } from 'd3-geo';
+import { geoAlbersUsa, geoEquirectangular } from 'd3';
 
 export default function (bbox, width, height) {
 	const projection = geoEquirectangular().scale(1).translate([0, 0]);

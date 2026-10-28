@@ -1,5 +1,5 @@
-import * as d3 from 'd3-selection';
-import * as styles from '../styles.css';
+import * as d3 from 'd3';
+import styles from '../styles.css';
 
 import { onFeatureClickCallbacks, onFeatureHoverCallbacks } from '../index';
 
@@ -35,17 +35,17 @@ export default function (map, g) {
 				.filter((feature) => {
 					return feature.type === 'Feature';
 				})
-				.on('click', function (feature) {
+				.on('click', function (event, feature) {
 					onFeatureClickCallbacks.get(map).forEach((fn) => {
 						fn.call(this, feature);
 					});
 				})
-				.on('mouseenter', function (feature) {
+				.on('mouseenter', function (event, feature) {
 					onFeatureHoverCallbacks.get(map).forEach((fns) => {
 						fns[0].call(this, feature);
 					});
 				})
-				.on('mouseleave', function (feature) {
+				.on('mouseleave', function (event, feature) {
 					onFeatureHoverCallbacks.get(map).forEach((fns) => {
 						fns[1].call(this, feature);
 					});

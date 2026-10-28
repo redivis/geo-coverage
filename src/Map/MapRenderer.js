@@ -1,22 +1,19 @@
-import './styles.css';
 import LegacyMap from './LegacyMap';
 
-import * as styles from './styles.css';
-import { set } from '../helpers/cache';
+import styles from './styles.css';
 
 export default class MapRenderer {
 	constructor(elem, props) {
 		this.elem = elem;
-		this.update(props);
 		this.collection = null;
 		this.mapData = null;
+		this.options = {};
 		this.settings = {};
-		window.addEventListener('resize', () => {
-			this.onResize();
-		});
+		window.addEventListener('resize', this.onResize);
+		this.update(props);
 	}
 
-	onResize() {
+	onResize = () => {
 		if (this.map) {
 			const defaultWidth = 700;
 			const defaultHeight = 467;
@@ -25,7 +22,7 @@ export default class MapRenderer {
 			const minRatio = Math.min(height / defaultHeight, width / defaultWidth);
 			this.map.resize({ width, height, minRatio });
 		}
-	}
+	};
 
 	update({ collection, mapData, options, settings }) {
 		if (mapData) {
@@ -35,6 +32,8 @@ export default class MapRenderer {
 				// We need to redraw if data changes or coverage settings change
 				collection !== this.collection ||
 				mapData !== this.mapData ||
+				options.latitudeIndicator !== this.options.latitudeIndicator ||
+				options.longitudeIndicator !== this.options.longitudeIndicator ||
 				settings.hideRoads !== this.settings.hideRoads ||
 				settings.useOsmRoadSpeed !== this.settings.useOsmRoadSpeed ||
 				settings.coverageTravelTime !== this.settings.coverageTravelTime ||
@@ -45,6 +44,7 @@ export default class MapRenderer {
 			) {
 				this.collection = collection;
 				this.mapData = mapData;
+				this.options = { ...options };
 				this.settings.hideRoads = settings.hideRoads;
 				this.settings.coverageTravelTime = settings.coverageTravelTime;
 				this.settings.colorScaleBucketCount = settings.colorScaleBucketCount;
@@ -85,5 +85,7 @@ export default class MapRenderer {
 		window.getCostDistanceCsv();
 	};
 
-	unload() {}
+	unload() {
+		window.removeEventListener('resize', this.onResize);
+	}
 }

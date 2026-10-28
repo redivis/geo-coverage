@@ -1,21 +1,17 @@
-import React, { useCallback } from 'react';
+import Button from '@mui/material/Button';
 
-import * as styles from './styles.css';
-import Button from '@material-ui/core/Button';
+import styles from './styles.css';
 
 export default function Header({ title, isUserAuthorized, onAuthorize, onDeauthorize }) {
-	const renderHeaderLogo = useCallback(() => {
-		let headerLogo = (
+	const renderHeaderLogo = () => {
+		const headerLogo = (
 			<div
 				className={styles.headerLogo}
-				style={{ height: 33, width: 194, backgroundImage: `url(/geo-coverage/assets/header.svg)` }}
+				style={{ height: 33, width: 194, backgroundImage: `url(${process.env.ROOT_PATH}/assets/header.svg)` }}
 			/>
 		);
-		if (title) {
-			headerLogo = <a href={`https://labs.redivis.com`}>{headerLogo}</a>;
-		}
-		return headerLogo;
-	}, [title]);
+		return title ? <a href={`https://labs.redivis.com`}>{headerLogo}</a> : headerLogo;
+	};
 
 	return (
 		<div className={styles.headerWrapper}>

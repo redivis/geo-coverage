@@ -1,12 +1,4 @@
-import { zoomTransform } from 'd3';
-
-export default function ({ width, height, minRatio }) {
-	let transform = zoomTransform(this.svg);
-
-	transform = transform.scale(minRatio / transform.k);
-
-	// this.zoom.transform(this.svg, transform);
-
+export default function ({ width, height }) {
 	this.svg.attr('width', width).attr('height', height);
 
 	this.legend.resize();
