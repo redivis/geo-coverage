@@ -32,7 +32,8 @@ module.exports = function (env = {}) {
 						loader: 'babel-loader',
 						options: {
 							cacheDirectory: isDevelopment,
-							presets: ['@babel/preset-react', '@babel/preset-env'],
+							// Babel otherwise infers development mode from NODE_ENV, which is unset in production builds
+							presets: [['@babel/preset-react', { development: isDevelopment }], '@babel/preset-env'],
 						},
 					},
 				},
